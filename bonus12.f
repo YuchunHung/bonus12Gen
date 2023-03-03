@@ -18,8 +18,6 @@ CCCC  type = 1, tagged = 1 (radiated neutron + recoil proton from e-d, BONuS pro
       character*40 outfile
       external ran3
       integer*4 numOptions
-      real*8 tempDump, p2, bjorkenX, gamma2, theta_pq
-      real*8 y0, y_test
 
       MD = 2*mN + epsD          !!! deuteron mass in MeV/c     
       numOptions = iargc()
@@ -31,11 +29,7 @@ CCCC  type = 1, tagged = 1 (radiated neutron + recoil proton from e-d, BONuS pro
 c      read(5,*) seed, outfile
 
       open(unit=26,file=outfile,status='new')
-      open(unit=29,file='junk.dat', action='write', status='replace')
-      write(29, *) "e   e'   q2   nu    w2   xb  yD  pT   p  theta_pq"
-      open(unit=27,file='chkPT3.dat', action='write', status='replace')
-      write(27, *) "In sampproton.f:  norm  test  gamma   yD   pT   fyt
-     &   fyint"
+c      open(unit=29,file='check.dat', action='write', status='replace')
       
 c      seed = -180081277
 c      nevents = 5
@@ -90,16 +84,9 @@ c       write(6,*) i,"test2"
        sin2 = sin2*sin2
        q2 = 4*e*ep*sin2
        nu = e-ep
-       w2 = mp2 + 2*mp*nu-q2 !// only for scattered proton? may not correct for the deuteron.
+       w2 = mp2 + 2*mp*nu-q2
        
        gamma = sqrt(1.0+q2/(nu*nu))
-       bjorkenX = q2/(2.0*MD*nu/1000.0)
-c       gamma2 = sqrt(1 + 4*bjorkenX*bjorkenX*MD*MD/1000000.0/q2)
-       gamma2 = sqrt(1.0+q2/nu/nu)
-       write(*,*) gamma, gamma2, gamma-gamma2
-       if (gamma2 .lt. 1.0) then
-          write(*,*) "gamma is less than 1"
-       endif
 
 c       write(6,*) "test2",nu,q2,gamma
        
@@ -122,21 +109,15 @@ c       phiq = 180.0/pi*acos(qx/sqrt(qx*qx+qy*qy))
 
 c       write(6,*) "check:  ", phiq+180.0, phi
        pp = 0.0
-       p2 = 0.0
        if(type.EQ.2) then
-         eel = mp*ep/(mp-2.0*ep*sin2) 
+         eel = mp*ep/(mp-2.0*ep*sin2)
          nuel = eel-ep
          q2el = 4.0*eel*ep*sin2
          pp = sqrt(nuel*nuel+q2el)!sqrt(nuel*nuel+q2) 
          px = qx
          py = qy
          pz = eel-lz
-         p2 = sqrt(px*px+py*py+pz*pz)
          thetap = radcon*acos(pz/sqrt(pz*pz+px*px+py*py))
-         tempDump = abs(pp - p2)
-         write (6,*) "type ", type, ": pp = ", pp,
-     &      " p2 = ", p2, " diff p = ", tempDump
-c         write (29,*) pp, p2, tempDump
        elseif(type.EQ.1) then  
          thetap = 180*ran3(seed) !!! For now assume uniform distribution  !!!
                                   !!!  need to put in a reasonable proton momentum distribution sampling
@@ -153,8 +134,8 @@ c         write (29,*) pp, p2, tempDump
        endif
 
        if(type.EQ.1.AND.tagged.EQ.1) then
+c         write(6,*) "test3"
           call sampproton(gamma,yd,pT)  !!!  pT returned in MeV/c.  Component perpendicular to photon direction  !!!
-c          write(*, *) "yd = ", yD, " pT = ", pT
          IF (gamma.GT.1.D0) THEN
 	   pgz = ( DSQRT( (1.D0-yD)**2*MD**2              !!! Component of proton momentum along photon direction  !!!
      &           + (gamma**2-1.D0)*(pT**2 + mN**2) )
@@ -204,18 +185,8 @@ c         write(6,1003) e,ep,theta,pgz,pgzc,pp,pxy,pz,sqrt(px*px+py*py)
 
        write(26,1001) two,-1.0*lt,one,pidp,zero,zero,
      &      px,py,pz,epro,mp,vx,vy,vz
-c       write(6,*) "writeInFile",-1.0*lt,one,pidp,zero,zero,
-c     &      px,py,pz,epro,mp,vx,vy,vz
 
 c       write(29,*) e,ep,theta,thetap,pp
-
-c       *****check*****         
-       p2 = sqrt(px*px + py*py + pz*pz)
-       tempDump = (px*qx + py*qy + pz*qz)/(p2*qv)
-       theta_pq = (180.0/pi)*acos(tempDump)
-       write(*,*) theta_pq, px, py, pz
-
-          write(29, *) e, ep, q2, nu, w2, bjorkenX, yD, pT, p2, theta_pq
        
 c       write(6,*) sig
        
